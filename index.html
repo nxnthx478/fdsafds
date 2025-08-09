@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ахуенная визитка</title>
+
+<!-- Шрифты -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --accent1:#8a5cff;
+  --accent2:#ff6bcb;
+  --glass-bg: rgba(255,255,255,0.06);
+  --glass-border: rgba(255,255,255,0.12);
+  --text:#f6f6fa;
+  --muted:rgba(255,255,255,0.75);
+  --card-radius:20px;
+  --w: 1100px;
+}
+
+/* --- Reset --- */
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family:"Inter",system-ui,Segoe UI,Roboto,Arial; -webkit-font-smoothing:antialiased}
+body{
+  background:#010006;
+  color:var(--text);
+  overflow:hidden;
+}
+
+/* --- фон (замени URL ниже в JS) --- */
+.bg {
+  position:fixed; inset:0; z-index:0; overflow:hidden;
+}
+.bg img, .bg video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter: saturation(1.05) contrast(1.02) blur(1px); transform: scale(1.02); }
+
+/* тёмный градиент-оверлей */
+.bg::after{
+  content:""; position:absolute; inset:0;
+  background: linear-gradient(120deg, rgba(8,6,18,0.55), rgba(25,6,42,0.35));
+  mix-blend-mode: overlay;
+}
+
+/* Particle canvas поверх фона */
+#pcanvas{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+
+/* --- контейнер UI --- */
+.app{ position:relative; z-index:6; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px;}
+
+/* --- Liquid glass card --- */
+.card{
+  width: min(var(--w), 96%);
+  max-width:1100px;
+  padding:28px;
+  border-radius: var(--card-radius);
+  position:relative;
+  backdrop-filter: blur(8px) saturate(140%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  overflow:visible;
+  display:grid;
+  grid-template-columns: 1fr 420px;
+  gap:24px;
+  transform: translateY(18px);
+  transition: transform .45s cubic-bezier(.2,.9,.2,1), box-shadow .45s;
+}
+
+/* decorative blobs (liquid) */
+.card::before, .card::after{
+  content:"";
+  position:absolute;
+  border-radius:50%;
+  filter: blur(40px) saturate(140%);
+  opacity:0.8;
+  transform: translateZ(0);
+  z-index:-1;
+}
+.card::before{
+  width:260px; height:260px; right: -90px; top:-70px;
+  background: radial-gradient(circle at 30% 30%, var(--accent1), transparent 40%);
+  mix-blend-mode: screen;
+  animation: float1 8s ease-in-out infinite;
+}
+.card::after{
+  width:320px; height:320px; left:-110px; bottom:-100px;
+  background: radial-gradient(circle at 70% 70%, var(--accent2), transparent 40%);
+  mix-blend-mode: screen;
+  animation: float2 10s ease-in-out infinite;
+}
+@keyframes float1{ 0%{transform:translateY(0) rotate(0)}50%{transform:translateY(12px) rotate(8deg)}100%{transform:translateY(0) rotate(0)} }
+@keyframes float2{ 0%{transform:translateY(0) rotate(0)}50%{transform:translateY(-16px) rotate(-6deg)}100%{transform:translateY(0) rotate(0)} }
+
+/* left content */
+.left{
+  padding:10px 6px;
+  display:flex; flex-direction:column; justify-content:center;
+}
+.logo{
+  display:flex; align-items:center; gap:12px; margin-bottom:8px;
+}
+.logo .dot{ width:48px; height:48px; border-radius:12px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow: 0 8px 30px rgba(138,92,255,0.18); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:20px; }
+.title{ font-size:28px; font-weight:800; letter-spacing:-0.6px; }
+.subtitle{ color:var(--muted); margin-top:4px; font-weight:500; }
+
+/* role typed */
+.role-wrap{ margin-top:12px; display:flex; align-items:center; gap:10px; }
+.role-label{ font-weight:600; color:var(--muted); font-size:13px; padding:6px 10px; border-radius:10px; background: rgba(255,255,255,0.02); }
+.role-value{ font-weight:700; color:var(--accent1); font-size:18px; min-width:180px; }
+
+/* description */
+.desc{ margin-top:14px; color:var(--muted); line-height:1.5; font-size:15px; max-width:680px; }
+
+/* buttons */
+.controls{ margin-top:18px; display:flex; gap:12px; flex-wrap:wrap; }
+.btn{
+  display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:12px; cursor:pointer; text-decoration:none; color:#fff; font-weight:700;
+  background: linear-gradient(90deg,var(--accent1),var(--accent2)); box-shadow: 0 10px 30px rgba(138,92,255,0.16);
+  transition: transform .18s ease, box-shadow .18s;
+}
+.btn:active{ transform: translateY(2px); }
+
+/* right panel (avatar + stats) */
+.right{
+  padding:16px;
+  display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center;
+}
+.avatar{
+  width:220px; height:220px; border-radius:18px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.05);
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  display:flex; align-items:center; justify-content:center; font-size:48px; font-weight:800; color:rgba(255,255,255,0.9);
+}
+.stat-row{ display:flex; gap:12px; width:100%; justify-content:space-between; margin-top:10px; }
+.stat{ flex:1; background: rgba(255,255,255,0.02); padding:10px; border-radius:12px; text-align:center; }
+.stat .n{ font-weight:800; font-size:20px; color:var(--text); }
+.stat .label{ color:var(--muted); font-size:12px; margin-top:4px; }
+
+/* footer small */
+.small{ margin-top:6px; font-size:13px; color:var(--muted); text-align:center; }
+
+/* responsive */
+@media (max-width:980px){
+  .card{ grid-template-columns: 1fr; padding:18px; gap:14px; }
+  .right{ order:-1; }
+  .avatar{ width:180px; height:180px; }
+}
+
+/* reveal animations */
+.reveal{ opacity:0; transform: translateY(10px); transition: all .6s cubic-bezier(.2,.9,.2,1); }
+.reveal.show{ opacity:1; transform:none; }
+</style>
+</head>
+<body>
+
+<!-- background wrapper -->
+<div class="bg" id="bg">
+  <!-- fallback image (will be set by JS) -->
+  <img id="bgimg" src="" alt="фон">
+</div>
+
+<canvas id="pcanvas"></canvas>
+
+<div class="app">
+  <div class="card reveal" id="card">
+    <div class="left">
+      <div class="logo">
+        <div class="dot">D</div>
+        <div>
+          <div class="title" id="name">Danil</div>
+          <div class="subtitle" id="subtitle">Квантовый профессор / Troll Master</div>
+        </div>
+      </div>
+
+      <div class="role-wrap">
+        <div class="role-label">ROLE</div>
+        <div class="role-value" id="typed">Loading…</div>
+      </div>
+
+      <div class="desc" id="desc">Делаю проекты на Python, тролю в меру и красиво. Кидай ссылку — пусть ахуели.</div>
+
+      <div class="controls">
+        <a class="btn" id="tg" href="#" target="_blank">Telegram</a>
+        <a class="btn" id="ig" href="#" target="_blank">Instagram</a>
+      </div>
+
+      <div class="small" style="margin-top:8px">Клик по карте — небольшой parallax, двигай мышкой для эффекта.</div>
+    </div>
+
+    <div class="right">
+      <div class="avatar" id="avatar">Y</div>
+      <div class="stat-row">
+        <div class="stat"><div class="n" id="s1">4</div><div class="label">Проектов</div></div>
+        <div class="stat"><div class="n" id="s2">260</div><div class="label">Подписчиков</div></div>
+      </div>
+      <div class="small">Сделано yourowner1488/@pshfiwne.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ----------------- НАСТРОЙКИ — сюда вставь свою ссылку фона и данные ----------------- */
+const CONFIG = {
+  bg: "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.wallpaperbetter.com%2Fru%2Fhd-wallpaper-ukpgf&psig=AOvVaw2Cj5KfN4dVEn3SrmO07FOB&ust=1754789815786000&source=images&cd=vfe&opi=89978449&ved=0CBUQjRxqFwoTCNDug9LL_I4DFQAAAAAdAAAAABAE", // <- замени на свою картинку/видео ссылку
+  name: "yourowner1488",
+  subtitle: "Квантовый профессор • Субо братик",
+  roles: ["ПОДПИШИСЬ","МИЛЕЕЕН","Python dev","Expensive Coder"],
+  desc: "Делаю проекты на Python.",
+  tg: "https://t.me/pshfiwne",
+  ig: "https://www.instagram.com/yourowner1488?igsh=MWxua3BwbnplZjN2OA%3D%3D&utm_source=qr",
+  avatarText: "D",
+  stats: {projects: 42, subs: 1337}
+};
+/* ----------------------------------------------------------------------------------- */
+
+/* Установка данных в DOM */
+document.getElementById('bgimg').src = CONFIG.bg;
+document.getElementById('name').textContent = CONFIG.name;
+document.getElementById('subtitle').textContent = CONFIG.subtitle;
+document.getElementById('desc').textContent = CONFIG.desc;
+document.getElementById('tg').href = CONFIG.tg;
+document.getElementById('ig').href = CONFIG.ig;
+document.getElementById('avatar').textContent = CONFIG.avatarText;
+document.getElementById('s1').textContent = CONFIG.stats.projects;
+document.getElementById('s2').textContent = CONFIG.stats.subs;
+
+/* Reveal */
+setTimeout(()=> document.getElementById('card').classList.add('show'), 140);
+
+/* Typewriter (roles) */
+(function typeRoles(el, words, wait=1600){
+  let i=0, j=0, deleting=false;
+  function tick(){
+    const full = words[i];
+    if(!deleting){
+      j++; el.textContent = full.slice(0,j);
+      if(j===full.length){ deleting=true; setTimeout(tick, wait); return; }
+    } else {
+      j--; el.textContent = full.slice(0,j);
+      if(j===0){ deleting=false; i=(i+1)%words.length; }
+    }
+    setTimeout(tick, deleting ? 30 : 40 + Math.random()*30);
+  }
+  tick();
+})(document.getElementById('typed'), CONFIG.roles);
+
+/* Parallax card on mouse move */
+const card = document.getElementById('card');
+window.addEventListener('mousemove', (e)=>{
+  const cx = innerWidth/2, cy = innerHeight/2;
+  const dx = (e.clientX - cx)/cx;
+  const dy = (e.clientY - cy)/cy;
+  card.style.transform = `translate3d(${dx*10}px, ${dy*10 + 18}px, 0) rotateX(${dy*4}deg) rotateY(${dx*4}deg)`;
+});
+
+/* Simple particle system on canvas */
+const canvas = document.getElementById('pcanvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width = innerWidth, H = canvas.height = innerHeight;
+window.addEventListener('resize', ()=>{ W=canvas.width = innerWidth; H=canvas.height = innerHeight; init(); });
+
+let particles = [];
+function rand(a,b){ return Math.random()*(b-a)+a; }
+function init(){
+  particles = [];
+  const count = Math.max(50, Math.floor((W*H)/120000));
+  for(let i=0;i<count;i++){
+    particles.push({
+      x: rand(0,W), y: rand(0,H),
+      vx: rand(-0.2,0.2), vy: rand(-0.15,0.15),
+      r: rand(0.6,2.6), hue: rand(220,320), life: rand(80,600)
+    });
+  }
+}
+init();
+let mx = W/2, my = H/2;
+window.addEventListener('mousemove', (e)=>{ mx=e.clientX; my=e.clientY; });
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = 'rgba(6,6,12,0.18)';
+  ctx.fillRect(0,0,W,H);
+  for(let p of particles){
+    const dx = (mx - p.x), dy = (my - p.y);
+    const d = Math.max(30, Math.sqrt(dx*dx+dy*dy));
+    const pull = 20 / d;
+    p.vx += dx*pull*0.0009; p.vy += dy*pull*0.0007;
+    p.vx *= 0.994; p.vy *= 0.994;
+    p.x += p.vx; p.y += p.vy;
+    if(p.x < -30 || p.x > W+30 || p.y < -30 || p.y > H+30 || (--p.life <= 0)){
+      p.x = rand(0,W); p.y = rand(0,H); p.vx = rand(-0.3,0.3); p.vy = rand(-0.2,0.2); p.r = rand(0.6,2.8); p.life = rand(80,600);
+    }
+    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*8);
+    g.addColorStop(0, `hsla(${p.hue},90%,65%,0.95)`);
+    g.addColorStop(0.2, `hsla(${p.hue},85%,55%,0.22)`);
+    g.addColorStop(1, 'rgba(10,10,12,0)');
+    ctx.beginPath(); ctx.fillStyle = g; ctx.arc(p.x,p.y,p.r*8,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.fillStyle = `hsla(${p.hue},85%,65%,0.95)`; ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* Small mobile adjustments: reduce particles */
+if(/Mobi|Android/i.test(navigator.userAgent)){
+  // optional: lower particle count for phones
+}
+
+/* Click to pulse blobs (fun effect) */
+card.addEventListener('click', (e)=>{
+  const pulse = document.createElement('div');
+  pulse.style.position='absolute';
+  pulse.style.left=(e.clientX - card.getBoundingClientRect().left - 80)+'px';
+  pulse.style.top=(e.clientY - card.getBoundingClientRect().top - 80)+'px';
+  pulse.style.width='160px'; pulse.style.height='160px'; pulse.style.borderRadius='50%';
+  pulse.style.background='radial-gradient(circle, rgba(255,255,255,0.18), rgba(255,255,255,0.02))';
+  pulse.style.filter='blur(30px)'; pulse.style.pointerEvents='none'; pulse.style.opacity='0.9';
+  card.appendChild(pulse);
+  setTimeout(()=>{ pulse.style.transition='opacity 700ms'; pulse.style.opacity='0'; }, 40);
+  setTimeout(()=> pulse.remove(), 900);
+});
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
